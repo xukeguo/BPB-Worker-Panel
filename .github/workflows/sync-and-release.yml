@@ -27,7 +27,7 @@ jobs:
       - name: Sync upstream
         run: |
           # 添加上游源（这里以 bia-gasp/bpb-panel 为例，若为其他原作者请替换）
-          git remote add upstream https://github.com/bia-gasp/bpb-panel.git || true
+          git remote add upstream https://github.com/bia-pain-bache/BPB-Worker-Panel.git || true
           git fetch upstream
           
           # 将上游主分支合并到当前分支
