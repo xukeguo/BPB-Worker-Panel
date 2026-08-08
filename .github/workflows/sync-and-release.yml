@@ -1,0 +1,51 @@
+name: Sync Upstream and Release (同步上游并发布)
+
+on:
+  schedule:
+    # 每 12 小时自动运行一次 (UTC 时间)
+    - cron: '0 */12 * * *'
+  workflow_dispatch: # 支持在 GitHub 页面手动点击运行
+
+jobs:
+  sync-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Check out 本地仓库代码
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. 配置 Git 基础信息
+      - name: Setup Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # 3. 添加上游仓库并拉取合并
+      - name: Sync upstream
+        run: |
+          # 添加上游源（这里以 bia-gasp/bpb-panel 为例，若为其他原作者请替换）
+          git remote add upstream https://github.com/bia-gasp/bpb-panel.git || true
+          git fetch upstream
+          
+          # 将上游主分支合并到当前分支
+          git checkout main || git checkout master
+          git merge upstream/main -m "chore: auto sync from upstream [$(date +'%Y-%m-%d %H:%M')]" || git merge upstream/master -m "chore: auto sync from upstream"
+
+      # 4. 推送最新的代码到你的 GitHub 仓库
+      - name: Push changes to repository
+        run: |
+          git push origin HEAD
+
+      # 5. (可选) 自动创建 Release 发布版本
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: env.HAS_NEW_COMMIT == 'true'
+        with:
+          tag_name: "v$(date +'%Y.%m.%d-%H%M')"
+          name: "BPB-Panel Auto Release $(date +'%Y-%m-%d')"
+          body: "此版本由 GitHub Actions 自动从上游 BPB-Panel 同步并发布。"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
